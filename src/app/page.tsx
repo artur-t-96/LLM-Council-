@@ -85,7 +85,15 @@ export default function Home() {
         });
 
         if (!parseRes.ok) {
-          throw new Error("Failed to parse file");
+          const errorText = await parseRes.text();
+          let errorMessage = "Unknown error";
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.error;
+          } catch (e) {
+            errorMessage = errorText || parseRes.statusText;
+          }
+          throw new Error(`Server Error (${parseRes.status}): ${errorMessage}`);
         }
 
         const parseData = await parseRes.json();
@@ -188,8 +196,8 @@ export default function Home() {
                     <div
                       key={idx}
                       className={`rounded-xl border p-6 ${response.error
-                          ? "bg-red-900/20 border-red-800"
-                          : "bg-gray-900 border-gray-800"
+                        ? "bg-red-900/20 border-red-800"
+                        : "bg-gray-900 border-gray-800"
                         }`}
                     >
                       <div className="flex items-center justify-between mb-4">
