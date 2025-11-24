@@ -15,12 +15,28 @@ export async function POST(request: Request) {
         const anthropicKey = apiKeys?.anthropic || process.env.ANTHROPIC_API_KEY;
         const xaiKey = apiKeys?.xai || process.env.XAI_API_KEY;
 
-        if (openaiKey) clients.push(new ChatGPTClient(openaiKey));
-        if (anthropicKey) clients.push(new ClaudeClient(anthropicKey));
-        if (xaiKey) clients.push(new GrokClient(xaiKey));
+        console.log("API Keys presence:", {
+            openai: !!openaiKey,
+            anthropic: !!anthropicKey,
+            xai: !!xaiKey
+        });
 
-        if (clients.length === 0) {
-            return NextResponse.json({ error: "No LLM providers configured" }, { status: 500 });
+        if (openaiKey) {
+            clients.push(new ChatGPTClient(openaiKey));
+        } else {
+            clients.push({ ask: async () => ({ provider: "ChatGPT", content: "", error: "Configuration Error: Missing OPENAI_API_KEY" }) });
+        }
+
+        if (anthropicKey) {
+            clients.push(new ClaudeClient(anthropicKey));
+        } else {
+            clients.push({ ask: async () => ({ provider: "Claude", content: "", error: "Configuration Error: Missing ANTHROPIC_API_KEY" }) });
+        }
+
+        if (xaiKey) {
+            clients.push(new GrokClient(xaiKey));
+        } else {
+            clients.push({ ask: async () => ({ provider: "Grok", content: "", error: "Configuration Error: Missing XAI_API_KEY" }) });
         }
 
         const promises = clients.map(client => client.ask(prompt));
