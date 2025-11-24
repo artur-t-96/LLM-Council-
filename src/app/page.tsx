@@ -81,30 +81,30 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-purple-600 mb-2">
-            LLM Council
+          <h1 className="text-5xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-400 bg-clip-text text-transparent">
+              LLM Council
+            </span>
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-400 text-lg">
             Consult the council of ChatGPT, Claude, and Grok.
           </p>
-          <p className="text-sm text-blue-600 font-medium mt-1">
-            Chair: Claude
-          </p>
+          <p className="text-blue-400 font-medium mt-2">Chair: Claude</p>
         </div>
 
         {/* Input Form */}
-        <div className="max-w-3xl mx-auto mb-8">
+        <div className="max-w-3xl mx-auto mb-12">
           <form onSubmit={handleSubmit} className="relative">
             <input
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask a question to the council..."
-              className="w-full px-6 py-4 pr-14 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
+              className="w-full px-6 py-4 pr-14 rounded-xl bg-gray-900 border-2 border-purple-500/30 focus:border-purple-500 focus:outline-none text-white placeholder:text-gray-500"
               disabled={loading}
             />
             <button
@@ -123,11 +123,11 @@ export default function Home() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse"
+                className="bg-gray-900 rounded-xl border border-gray-800 p-6 animate-pulse"
               >
-                <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-                <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                <div className="h-4 bg-gray-800 rounded w-1/3 mb-4"></div>
+                <div className="h-3 bg-gray-800 rounded w-full mb-2"></div>
+                <div className="h-3 bg-gray-800 rounded w-5/6"></div>
               </div>
             ))}
           </div>
@@ -140,33 +140,33 @@ export default function Home() {
               <div
                 key={index}
                 className={`rounded-xl border p-6 ${response.error
-                    ? "bg-red-50 border-red-300"
-                    : "bg-white border-gray-200"
+                    ? "bg-red-900/20 border-red-800"
+                    : "bg-gray-900 border-gray-800"
                   }`}
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <span className="text-sm font-semibold text-gray-700">
+                    <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
+                      <span className="text-sm font-semibold text-white">
                         {response.provider.charAt(0)}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold text-white">
                       {response.provider}
                     </h3>
                   </div>
                   {!response.error && (
-                    <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+                    <span className="text-xs font-medium text-green-400 bg-green-900/30 px-2 py-1 rounded">
                       Success
                     </span>
                   )}
                   {response.error && (
-                    <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded">
+                    <span className="text-xs font-medium text-red-400 bg-red-900/30 px-2 py-1 rounded">
                       Error
                     </span>
                   )}
                 </div>
-                <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
                   {response.error || response.content}
                 </div>
               </div>
@@ -177,14 +177,14 @@ export default function Home() {
         {/* Evaluation Loading */}
         {evaluating && !evaluation && (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
+            <div className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 border border-purple-700 rounded-xl p-6">
               <div className="flex items-center gap-3 mb-4">
-                <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
+                <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900">
+                  <h3 className="font-bold text-lg text-white">
                     The Chair's Verdict
                   </h3>
-                  <p className="text-xs text-purple-600">
+                  <p className="text-xs text-purple-300">
                     Claude is evaluating the responses...
                   </p>
                 </div>
@@ -196,21 +196,21 @@ export default function Home() {
         {/* Chair's Verdict */}
         {evaluation && (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
+            <div className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 border border-purple-700 rounded-xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-lg">⚖️</span>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900">
+                  <h3 className="font-bold text-lg text-white">
                     The Chair's Verdict
                   </h3>
-                  <p className="text-xs text-purple-600">
+                  <p className="text-xs text-purple-300">
                     Final Evaluation & Synthesis by Claude
                   </p>
                 </div>
               </div>
-              <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+              <div className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">
                 {evaluation.content}
               </div>
             </div>
