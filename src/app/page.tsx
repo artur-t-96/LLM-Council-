@@ -1,13 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { Send, Loader2, Settings, MessageSquare } from "lucide-react";
 import Image from "next/image";
 
-interface Message {
-  role: "user" | "assistant";
+interface LLMResponse {
+  provider: string;
   content: string;
-  verifiedModels?: string[];
+  error?: string;
+}
+
+interface ConversationTurn {
+  question: string;
+  responses: LLMResponse[];
+  evaluation: LLMResponse | null;
 }
 
 interface ApiKeys {
@@ -17,7 +23,7 @@ interface ApiKeys {
 }
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversation, setConversation] = useState<ConversationTurn[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -34,22 +40,23 @@ export default function Home() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [conversation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
-    const userMessage: Message = { role: "user", content: input };
-    setMessages(prev => [...prev, userMessage]);
+    const currentQuestion = input;
     setInput("");
     setLoading(true);
 
     try {
-      const conversationHistory = [...messages, userMessage];
-      const contextPrompt = conversationHistory
-        .map(msg => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
-        .join("\n\n");
+      // Build context from previous conversation
+      const contextPrompt = conversation.length > 0
+        ? conversation.map(turn =>
+          `Question: ${turn.question}\nAnswer: ${turn.evaluation?.content || turn.responses[0]?.content || ""}`
+        ).join("\n\n") + `\n\nNew Question: ${currentQuestion}`
+        : currentQuestion;
 
       const res = await fetch("/api/ask", {
         method: "POST",
@@ -60,15 +67,12 @@ export default function Home() {
       if (!res.ok) throw new Error("Failed to fetch responses");
 
       const data = await res.json();
-      const verifiedModels = data.results
-        .filter((r: any) => !r.error && r.content)
-        .map((r: any) => r.provider);
 
       const evalRes = await fetch("/api/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          question: input,
+          question: currentQuestion,
           responses: data.results,
           apiKeys
         }),
@@ -77,165 +81,162 @@ export default function Home() {
       if (!evalRes.ok) throw new Error("Failed to evaluate responses");
 
       const evalData = await evalRes.json();
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: evalData.evaluation.content,
-        verifiedModels: verifiedModels
+
+      const newTurn: ConversationTurn = {
+        question: currentQuestion,
+        responses: data.results,
+        evaluation: evalData.evaluation
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setConversation(prev => [...prev, newTurn]);
     } catch (err: any) {
-      const errorMessage: Message = {
-        role: "assistant",
-        content: `Przepraszam, wystąpił błąd: ${err.message}`
+      const errorTurn: ConversationTurn = {
+        question: currentQuestion,
+        responses: [],
+        evaluation: {
+          provider: "Error",
+          content: `Przepraszam, wystąpił błąd: ${err.message}`
+        }
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setConversation(prev => [...prev, errorTurn]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="flex flex-col h-screen relative overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 animate-gradient"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent"></div>
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col h-full">
-        {/* Header */}
-        <header className="glass-strong sticky top-0 z-20 border-b border-white/10">
-          <div className="max-w-4xl mx-auto px-6 py-6">
-            <div className="relative w-full h-28 mb-4 rounded-2xl overflow-hidden glass glow">
-              <Image
-                src="/board-banner.png"
-                alt="Wirtualna Rada Nadzorcza AI"
-                fill
-                className="object-cover opacity-90"
-                priority
-              />
-            </div>
-            <div className="text-center">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-2">
-                Wirtualna Rada Nadzorcza AI
-              </h1>
-              <p className="text-sm text-purple-200/80 flex items-center justify-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Konsultuj się z najlepszymi modelami AI
-              </p>
-            </div>
+    <main className="min-h-screen bg-gray-950 text-white">
+      {/* Header */}
+      <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="relative w-full h-32 mb-4 rounded-lg overflow-hidden">
+            <Image
+              src="/board-banner.png"
+              alt="Wirtualna Rada Nadzorcza AI"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
-        </header>
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-4 py-8">
-          <div className="max-w-3xl mx-auto space-y-6">
-            {messages.length === 0 ? (
-              <div className="text-center mt-20 space-y-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full glass-strong glow mb-4">
-                  <Sparkles className="w-8 h-8 text-purple-400" />
-                </div>
-                <p className="text-xl text-purple-100 font-medium">
-                  Witaj w Wirtualnej Radzie Nadzorczej AI
-                </p>
-                <p className="text-sm text-purple-300/60 max-w-md mx-auto">
-                  Zadaj pytanie, a rada doradcza złożona z GPT-5.1, Claude 4.5 i Grok 4.1 udzieli Ci odpowiedzi
-                </p>
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`message-enter ${message.role === "user" ? "flex justify-end" : ""
-                    }`}
-                >
-                  <div className={`max-w-[85%] ${message.role === "user" ? "ml-auto" : ""}`}>
-                    <div
-                      className={`rounded-2xl px-5 py-4 ${message.role === "user"
-                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50"
-                          : "glass-strong"
-                        }`}
-                    >
-                      <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {message.content}
-                      </div>
-                    </div>
-
-                    {message.role === "assistant" && message.verifiedModels && (
-                      <div className="mt-3 flex items-center gap-2 text-xs">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-                        <span className="text-purple-300/60">Zweryfikowano:</span>
-                        <div className="flex gap-2">
-                          {message.verifiedModels.includes("ChatGPT") && (
-                            <span className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full border border-green-500/30 flex items-center gap-1.5 hover:bg-green-500/30 transition-colors">
-                              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                              GPT-5.1
-                            </span>
-                          )}
-                          {message.verifiedModels.includes("Claude") && (
-                            <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 flex items-center gap-1.5 hover:bg-purple-500/30 transition-colors">
-                              <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
-                              Claude 4.5
-                            </span>
-                          )}
-                          {message.verifiedModels.includes("Grok") && (
-                            <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/30 flex items-center gap-1.5 hover:bg-blue-500/30 transition-colors">
-                              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
-                              Grok 4.1
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-
-            {loading && (
-              <div className="message-enter">
-                <div className="max-w-[85%]">
-                  <div className="glass-strong rounded-2xl px-5 py-4">
-                    <div className="flex items-center gap-3 text-purple-300">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">Rada Nadzorcza analizuje pytanie...</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+          <h1 className="text-2xl font-bold text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Wirtualna Rada Nadzorcza AI
+          </h1>
+          <p className="text-sm text-gray-400 text-center mt-1">
+            Konsultuj się z GPT-5.1, Claude Sonnet 4.5 i Grok 4.1
+          </p>
         </div>
+      </header>
 
-        {/* Input Area */}
-        <div className="sticky bottom-0 glass-strong border-t border-white/10 backdrop-blur-2xl">
-          <div className="max-w-3xl mx-auto px-4 py-6">
-            <form onSubmit={handleSubmit} className="relative">
-              <div className="glass-strong rounded-2xl p-1.5 glow-strong hover:glow transition-all duration-300">
-                <div className="flex items-center gap-3 px-4 py-2">
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Zadaj pytanie Radzie Nadzorczej..."
-                    className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-purple-300/40 text-sm"
-                    disabled={loading}
-                  />
-                  <button
-                    type="submit"
-                    disabled={loading || !input.trim()}
-                    className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/50 hover:shadow-purple-500/70 hover:scale-105 active:scale-95"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </form>
-            <p className="text-center text-xs text-purple-300/40 mt-3">
-              Powered by GPT-5.1, Claude Sonnet 4.5 & Grok 4.1
+      {/* Conversation */}
+      <div className="max-w-7xl mx-auto px-4 py-6 pb-32">
+        {conversation.length === 0 ? (
+          <div className="text-center mt-20">
+            <MessageSquare className="w-16 h-16 mx-auto mb-4 text-purple-500" />
+            <p className="text-xl text-gray-300 mb-2">Witaj w Wirtualnej Radzie Nadzorczej AI</p>
+            <p className="text-sm text-gray-500">
+              Zadaj pytanie, a rada doradcza udzieli Ci odpowiedzi
             </p>
           </div>
+        ) : (
+          conversation.map((turn, turnIndex) => (
+            <div key={turnIndex} className="mb-8">
+              {/* Question */}
+              <div className="mb-4 flex justify-end">
+                <div className="bg-blue-600 text-white rounded-lg px-4 py-2 max-w-2xl">
+                  <p className="text-sm font-medium">{turn.question}</p>
+                </div>
+              </div>
+
+              {/* Individual Responses */}
+              {turn.responses.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {turn.responses.map((response, idx) => (
+                    <div
+                      key={idx}
+                      className={`rounded-lg border p-4 ${response.error
+                          ? "bg-red-900/20 border-red-800"
+                          : "bg-gray-800 border-gray-700"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold text-sm">{response.provider}</h3>
+                        {!response.error && (
+                          <span className="text-xs text-green-400">Success</span>
+                        )}
+                        {response.error && (
+                          <span className="text-xs text-red-400">Error</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-300 whitespace-pre-wrap">
+                        {response.error || response.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Chair's Verdict */}
+              {turn.evaluation && (
+                <div className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 border border-purple-700 rounded-lg p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">The Chair's Verdict</h3>
+                      <p className="text-xs text-purple-300">Final Evaluation & Synthesis by Claude</p>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">
+                    {turn.evaluation.content}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+
+        {loading && (
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-gray-800 border border-gray-700 rounded-lg p-4 animate-pulse">
+                  <div className="h-4 bg-gray-700 rounded w-1/3 mb-3"></div>
+                  <div className="h-3 bg-gray-700 rounded w-full mb-2"></div>
+                  <div className="h-3 bg-gray-700 rounded w-5/6"></div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 text-purple-400">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Rada Nadzorcza analizuje pytanie...</span>
+            </div>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Fixed Input */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Zadaj pytanie Radzie Nadzorczej..."
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
         </div>
       </div>
     </main>
