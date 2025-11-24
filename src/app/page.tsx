@@ -7,6 +7,7 @@ import Image from "next/image";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  verifiedModels?: string[]; // Track which models contributed
 }
 
 interface ApiKeys {
@@ -66,6 +67,11 @@ export default function Home() {
 
       const data = await res.json();
 
+      // Track which models successfully responded
+      const verifiedModels = data.results
+        .filter((r: any) => !r.error && r.content)
+        .map((r: any) => r.provider);
+
       // Get evaluation from Chair
       const evalRes = await fetch("/api/evaluate", {
         method: "POST",
@@ -85,7 +91,8 @@ export default function Home() {
 
       const assistantMessage: Message = {
         role: "assistant",
-        content: evalData.evaluation.content
+        content: evalData.evaluation.content,
+        verifiedModels: verifiedModels
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -139,14 +146,46 @@ export default function Home() {
                   }`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user"
-                      ? "bg-blue-600 text-white ml-auto"
-                      : "bg-gray-100 text-gray-900"
+                  className={`max-w-[80%] ${message.role === "user"
+                      ? "ml-auto"
+                      : ""
                     }`}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {message.content}
+                  <div
+                    className={`rounded-2xl px-4 py-3 ${message.role === "user"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-900"
+                      }`}
+                  >
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {message.content}
+                    </div>
                   </div>
+
+                  {/* Verification badges for assistant messages */}
+                  {message.role === "assistant" && message.verifiedModels && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                      <span>Skonsultowano z:</span>
+                      {message.verifiedModels.includes("ChatGPT") && (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                          GPT-5.1
+                        </span>
+                      )}
+                      {message.verifiedModels.includes("Claude") && (
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                          Claude 4.5
+                        </span>
+                      )}
+                      {message.verifiedModels.includes("Grok") && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                          Grok 4.1
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))
