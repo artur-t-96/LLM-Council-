@@ -1,78 +1,76 @@
-# LLM Council
+# Wirtualna Rada Nadzorcza AI
 
-A Next.js application that consults multiple state-of-the-art AI models and synthesizes their responses through a "Chair" evaluator.
+Aplikacja Next.js umożliwiająca konsultacje z najlepszymi modelami AI, które wspólnie tworzą wirtualną radę nadzorczą.
 
-## Features
+## Funkcje
 
-- **Multi-Model Consultation**: Queries three leading AI models simultaneously:
+- **Konsultacje z wieloma modelami**: Zapytania są kierowane do trzech wiodących modeli AI:
   - **GPT-5.1** (OpenAI)
   - **Claude Sonnet 4.5** (Anthropic)
   - **Grok 4.1 Fast Reasoning** (xAI)
 
-- **Chair Evaluation**: Claude Sonnet 4.5 serves as the Chair, synthesizing all responses into one unified, authoritative answer
+- **Synteza odpowiedzi**: Claude Sonnet 4.5 pełni rolę przewodniczącego, syntetyzując wszystkie odpowiedzi w jedną, autorytatywną odpowiedź
 
-- **Modern UI**: Beautiful, responsive interface with real-time status indicators
+- **Interfejs czatu**: Nowoczesny interfejs w stylu Claude z możliwością prowadzenia rozmowy follow-up
 
-- **Flexible Configuration**: API keys can be configured via environment variables or directly in the UI
+- **Konfiguracja**: Klucze API konfigurowane są przez zmienne środowiskowe
 
-## Getting Started
+## Rozpoczęcie pracy
 
-### Prerequisites
+### Wymagania
 
-- Node.js 18+ 
-- npm or yarn
-- API keys for:
+- Node.js 20+ 
+- npm lub yarn
+- Klucze API dla:
   - OpenAI (GPT-5.1)
   - Anthropic (Claude)
   - xAI (Grok)
 
-### Installation
+### Instalacja
 
-1. Clone the repository:
+1. Sklonuj repozytorium:
 ```bash
 git clone https://github.com/artur-t-96/LLM-Council-.git
 cd LLM-Council-
 ```
 
-2. Install dependencies:
+2. Zainstaluj zależności:
 ```bash
 npm install
 ```
 
-3. Configure API keys:
+3. Skonfiguruj klucze API:
 
-Create a `.env.local` file in the root directory:
+Utwórz plik `.env.local` w katalogu głównym:
 ```env
-OPENAI_API_KEY=your_openai_key
-ANTHROPIC_API_KEY=your_anthropic_key
-XAI_API_KEY=your_xai_key
+OPENAI_API_KEY=twoj_klucz_openai
+ANTHROPIC_API_KEY=twoj_klucz_anthropic
+XAI_API_KEY=twoj_klucz_xai
 ```
 
-Alternatively, you can configure keys directly in the UI by clicking the Settings icon.
-
-4. Run the development server:
+4. Uruchom serwer deweloperski:
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Otwórz [http://localhost:3000](http://localhost:3000) w przeglądarce
 
-## Usage
+## Użycie
 
-1. Enter your question in the input field
-2. The app queries all three AI models in parallel
-3. View individual responses from each model
-4. The Chair (Claude Sonnet 4.5) synthesizes a final answer
+1. Wpisz pytanie w polu tekstowym
+2. Aplikacja wysyła zapytanie do wszystkich trzech modeli AI równolegle
+3. Przewodniczący (Claude Sonnet 4.5) syntetyzuje odpowiedzi
+4. Możesz kontynuować rozmowę zadając pytania follow-up
 
-## Technology Stack
+## Stack technologiczny
 
-- **Framework**: Next.js 16 with TypeScript
-- **Styling**: Tailwind CSS
-- **AI SDKs**: 
+- **Framework**: Next.js 16 z TypeScript
+- **Stylowanie**: Tailwind CSS
+- **SDK AI**: 
   - OpenAI SDK
   - Anthropic SDK
-  - xAI API (OpenAI-compatible)
+  - xAI API (kompatybilne z OpenAI)
 
-## License
+## Licencja
 
 MIT
